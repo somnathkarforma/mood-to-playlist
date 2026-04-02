@@ -177,6 +177,11 @@
         // Debug: Check if API key was replaced
         console.log('API Key starts with:', API_KEY.substring(0, 10) + '...');
         console.log('API Key length:', API_KEY.length);
+        
+        // Alert if key wasn't replaced
+        if (API_KEY === 'GROQ_API_KEY_PLACEHOLDER') {
+            alert('API key was not replaced! Check GitHub Actions workflow.');
+        }
 
         document.getElementById('moodForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -206,6 +211,7 @@
 
                 const requestUrl = API_URL;
                 console.log('Request URL:', requestUrl);
+                console.log('API Key being used:', API_KEY.substring(0, 10) + '...');
 
                 const response = await fetch(requestUrl, {
                     method: 'POST',
@@ -223,6 +229,9 @@
                         temperature: 0.7
                     })
                 });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
 
                 if (!response.ok) {
                     throw new Error(`API Error: ${response.status}`);

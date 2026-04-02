@@ -28,7 +28,10 @@ jobs:
           
       - name: Replace API key placeholder
         run: |
+          echo "Replacing API key placeholder..."
           sed -i "s/GROQ_API_KEY_PLACEHOLDER/${GROQ_API_KEY}/g" index.html
+          echo "Replacement done. Checking result:"
+          grep -o "GROQ_API_KEY_PLACEHOLDER" index.html || echo "Placeholder successfully replaced"
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           
