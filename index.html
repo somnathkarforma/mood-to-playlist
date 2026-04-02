@@ -172,7 +172,7 @@
 
     <script>
         const API_KEY = 'GROQ_API_KEY_PLACEHOLDER';
-        const API_URL = 'https://api.groq.com/v1/completions';
+        const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
         // Debug: Check if API key was replaced
         console.log('API Key starts with:', API_KEY.substring(0, 10) + '...');
@@ -220,8 +220,11 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        model: 'llama3-8b',
-                        prompt: prompt,
+                        model: 'groq-1.5',
+                        messages: [
+                            { role: 'system', content: 'You are a helpful music recommendation assistant.' },
+                            { role: 'user', content: prompt }
+                        ],
                         max_tokens: 500,
                         temperature: 0.7,
                         top_p: 0.95
@@ -242,7 +245,7 @@
 
                 let content = '';
                 if (data.choices && data.choices.length > 0) {
-                    content = data.choices[0].text || data.choices[0].message?.content || '';
+                    content = data.choices[0].message?.content || data.choices[0].text || '';
                 } else if (data.output && data.output.length > 0) {
                     content = data.output[0].content[0]?.text || '';
                 }
