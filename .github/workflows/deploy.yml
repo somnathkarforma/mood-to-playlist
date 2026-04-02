@@ -28,9 +28,9 @@ jobs:
           
       - name: Replace API key placeholder
         run: |
-          sed -i "s/GEMINI_API_KEY_PLACEHOLDER/${GEMINI_API_KEY}/g" index.html
+          sed -i "s/GROQ_API_KEY_PLACEHOLDER/${GROQ_API_KEY}/g" index.html
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           
       - name: Setup Pages
         uses: actions/configure-pages@v4

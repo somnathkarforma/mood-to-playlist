@@ -171,8 +171,8 @@
     </div>
 
     <script>
-        const API_KEY = 'GEMINI_API_KEY_PLACEHOLDER';
-        const API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
+        const API_KEY = 'GROQ_API_KEY_PLACEHOLDER';
+        const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
         // Debug: Check if API key was replaced
         console.log('API Key starts with:', API_KEY.substring(0, 10) + '...');
@@ -204,20 +204,23 @@
                 Format each song as: [Song Name] - [Artist Name] - [Link]
                 Use actual, real songs that exist.`;
 
-                const requestUrl = `${API_URL}?key=${API_KEY}`;
-                console.log('Request URL:', requestUrl.replace(API_KEY, 'API_KEY_REDACTED'));
+                const requestUrl = API_URL;
+                console.log('Request URL:', requestUrl);
 
                 const response = await fetch(requestUrl, {
                     method: 'POST',
                     headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: prompt
-                            }]
-                        }]
+                        model: 'llama3-8b-8192',
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        max_tokens: 1000,
+                        temperature: 0.7
                     })
                 });
 
@@ -226,7 +229,7 @@
                 }
 
                 const data = await response.json();
-                const content = data.candidates[0].content.parts[0].text;
+                const content = data.choices[0].message.content;
 
                 displaySongs(content);
             } catch (error) {
