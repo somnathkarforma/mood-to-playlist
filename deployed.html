@@ -171,79 +171,122 @@
     </div>
 
     <script>
-        const API_KEY = 'GROQ_API_KEY_PLACEHOLDER';
-        const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+        const API_KEY = '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';
+        const API_URL = 'https://api.groq.com/v1/completions';
 
-        document.getElementById('moodForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const language = document.getElementById('language').value;
-    const mood = document.getElementById('mood').value;
-    const resultsDiv = document.getElementById('results');
-    const loadingDiv = document.getElementById('loading');
-
-    loadingDiv.style.display = 'block';
-    resultsDiv.innerHTML = '';
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                // Using a valid Groq model ID
-                model: 'llama-3.3-70b-versatile', 
-                messages: [
-                    { 
-                        role: 'system', 
-                        content: 'You are a music expert. Return recommendations in JSON format only. Root key: "songs", which is an array of objects with "title", "artist", and "link".' 
-                    },
-                    { 
-                        role: 'user', 
-                        content: `Suggest exactly 5 ${language} songs for someone feeling ${mood}. Provide real Spotify or YouTube links.` 
-                    }
-                ],
-                // This ensures the model returns valid JSON
-                response_format: { type: "json_object" },
-                temperature: 0.7
-            })
-        });
-
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || 'API Error');
+        // Debug: Check if API key was replaced
+        console.log('API Key starts with:', API_KEY.substring(0, 10) + '...');
+        console.log('API Key length:', API_KEY.length);
+        
+        // Alert if key wasn't replaced
+        if (API_KEY === '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') {
+            alert('API key was not replaced! Check GitHub Actions workflow.');
         }
 
-        const data = await response.json();
-        const content = JSON.parse(data.choices[0].message.content);
-        displaySongs(content.songs);
+        document.getElementById('moodForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const language = document.getElementById('language').value;
+            const mood = document.getElementById('mood').value;
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
 
-    } catch (error) {
-        resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-        console.error('Full Error:', error);
-    } finally {
-        loadingDiv.style.display = 'none';
-    }
-});
+            if (!language || !mood) {
+                resultsDiv.innerHTML = '<div class="error">Please fill in all fields.</div>';
+                return;
+            }
 
-function displaySongs(songs) {
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '<h2 style="color: #333; margin-bottom: 15px;">Recommended Songs:</h2>';
-    
-    songs.forEach(song => {
-        const songItem = document.createElement('div');
-        songItem.className = 'song-item';
-        songItem.innerHTML = `
-            <div class="song-title">${song.title} - ${song.artist}</div>
-            <div class="song-links">
-                <a href="${song.link}" target="_blank">Listen Now</a>
-            </div>
-        `;
-        resultsDiv.appendChild(songItem);
-    });
-}
+            loadingDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const prompt = `Suggest exactly 5 ${language} songs for someone who is feeling ${mood}. 
+                For each song, provide:
+                1. Song name
+                2. Artist name
+                3. Spotify link (if available, otherwise YouTube link)
+                
+                Format each song as: [Song Name] - [Artist Name] - [Link]
+                Use actual, real songs that exist.`;
+
+                const requestUrl = API_URL;
+                console.log('Request URL:', requestUrl);
+                console.log('API Key being used:', API_KEY.substring(0, 10) + '...');
+
+                const response = await fetch(requestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'llama3-8b',
+                        prompt: prompt,
+                        max_tokens: 500,
+                        temperature: 0.7,
+                        top_p: 0.95
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (!response.ok) {
+                    const errBody = await response.text();
+                    console.error('API error body:', errBody);
+                    throw new Error(`API Error: ${response.status} - ${errBody}`);
+                }
+
+                const data = await response.json();
+                console.log('GROQ response payload:', data);
+
+                let content = '';
+                if (data.choices && data.choices.length > 0) {
+                    content = data.choices[0].text || data.choices[0].message?.content || '';
+                } else if (data.output && data.output.length > 0) {
+                    content = data.output[0].content[0]?.text || '';
+                }
+
+                if (!content) {
+                    throw new Error('No response text returned by the API');
+                }
+
+                displaySongs(content);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Error:', error);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        });
+
+        function displaySongs(content) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2 style="color: #333; margin-bottom: 15px;">Recommended Songs:</h2>';
+            
+            const lines = content.split('\n').filter(line => line.trim());
+            let songCount = 0;
+
+            lines.forEach(line => {
+                if (line.trim() && songCount < 5) {
+                    const songItem = document.createElement('div');
+                    songItem.className = 'song-item';
+                    
+                    // Parse song information
+                    const songTitle = document.createElement('div');
+                    songTitle.className = 'song-title';
+                    songTitle.textContent = line;
+                    songItem.appendChild(songTitle);
+                    
+                    resultsDiv.appendChild(songItem);
+                    songCount++;
+                }
+            });
+
+            if (songCount === 0) {
+                resultsDiv.innerHTML += '<div class="error">Could not parse songs. Please try again.</div>';
+            }
+        }
     </script>
 </body>
 </html>
