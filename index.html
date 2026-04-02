@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>AI Mood Music</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.83.0/build/style.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/browser@0.83.0/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: ["google-generativeai"], // Install the AI library in the browser
+        entrypoint: "app.py",
+        files: {
+          "app.py": `
+import streamlit as st
+import google.generativeai as genai
+
+# Setup AI
+genai.configure(api_key="GEMINI_API_KEY")
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+st.title("🎵 AI Mood Music Recommender")
+
+st.subheader("Select your preferred language")
+language = st.selectbox("Language", ["English", "Bengali", "Hindi"])
+
+st.subheader("How are you feeling?")
+mood = st.text_input("Mood/Vibe (e.g., Happy, Sad, Energetic)")
+
+if st.button("Get 5 Songs"):
+    if mood:
+        with st.spinner('Asking the AI...'):
+            prompt = f"Suggest top 5 {language} songs for a {mood} mood. Provide Spotify/YouTube links."
+            response = model.generate_content(prompt)
+            st.markdown(response.text)
+    else:
+        st.error("Please enter a mood!")
+`,
+        },
+      }, document.getElementById("root"));
+    </script>
+  </body>
+</html>
