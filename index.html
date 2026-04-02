@@ -1,51 +1,262 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>AI Mood Music</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.71.0/build/style.css" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/browser@0.71.0/build/stlite.js"></script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎵 AI Mood Music Recommender</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .song-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .song-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .song-links {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .song-links a {
+            display: inline-block;
+            padding: 8px 12px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        
+        .song-links a:hover {
+            background: #764ba2;
+        }
+        
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .success-message {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 AI Mood Music Recommender</h1>
+        
+        <form id="moodForm">
+            <div class="form-group">
+                <label for="language">Select your preferred language</label>
+                <select id="language" required>
+                    <option value="">-- Choose a language --</option>
+                    <option value="English">English</option>
+                    <option value="Bengali">Bengali</option>
+                    <option value="Hindi">Hindi</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="mood">How are you feeling?</label>
+                <input type="text" id="mood" placeholder="e.g., Happy, Sad, Energetic, Calm, Romantic" required>
+            </div>
+            
+            <button type="submit">Get 5 Songs</button>
+        </form>
+        
+        <div id="loading" class="loading" style="display: none;">Loading songs...</div>
+        <div id="results" class="results"></div>
+    </div>
+
     <script>
-      stlite.mount({
-        requirements: ["google-generativeai"], // Install the AI library in the browser
-        entrypoint: "app.py",
-        files: {
-          "app.py": \`
-import streamlit as st
-try:
-    import google.generativeai as genai
-except ImportError:
-    st.error("AI library not loaded")
-    st.stop()
+        const API_KEY = 'AIzaSyCRtR2bEzI0FMk7uDhGKjPvxmxpk5nukmg';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
-# Setup AI
-genai.configure(api_key="AIzaSyCRtR2bEzI0FMk7uDhGKjPvxmxpk5nukmg")
-model = genai.GenerativeModel('gemini-1.5-flash')
+        document.getElementById('moodForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const language = document.getElementById('language').value;
+            const mood = document.getElementById('mood').value;
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
 
-st.title("🎵 AI Mood Music Recommender")
+            if (!language || !mood) {
+                resultsDiv.innerHTML = '<div class="error">Please fill in all fields.</div>';
+                return;
+            }
 
-st.subheader("Select your preferred language")
-language = st.selectbox("Language", ["English", "Bengali", "Hindi"])
+            loadingDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
 
-st.subheader("How are you feeling?")
-mood = st.text_input("Mood/Vibe (e.g., Happy, Sad, Energetic)")
+            try {
+                const prompt = `Suggest exactly 5 ${language} songs for someone who is feeling ${mood}. 
+                For each song, provide:
+                1. Song name
+                2. Artist name
+                3. Spotify link (if available, otherwise YouTube link)
+                
+                Format each song as: [Song Name] - [Artist Name] - [Link]
+                Use actual, real songs that exist.`;
 
-if st.button("Get 5 Songs"):
-    if mood:
-        with st.spinner('Asking the AI...'):
-            prompt = f"Suggest top 5 {language} songs for a {mood} mood. Provide Spotify/YouTube links."
-            response = model.generate_content(prompt)
-            st.markdown(response.text)
-    else:
-        st.error("Please enter a mood!")
-\`,
-        },
-      }, document.getElementById("root"));
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const content = data.candidates[0].content.parts[0].text;
+
+                displaySongs(content);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Error:', error);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        });
+
+        function displaySongs(content) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2 style="color: #333; margin-bottom: 15px;">Recommended Songs:</h2>';
+            
+            const lines = content.split('\n').filter(line => line.trim());
+            let songCount = 0;
+
+            lines.forEach(line => {
+                if (line.trim() && songCount < 5) {
+                    const songItem = document.createElement('div');
+                    songItem.className = 'song-item';
+                    
+                    // Parse song information
+                    const songTitle = document.createElement('div');
+                    songTitle.className = 'song-title';
+                    songTitle.textContent = line;
+                    songItem.appendChild(songTitle);
+                    
+                    resultsDiv.appendChild(songItem);
+                    songCount++;
+                }
+            });
+
+            if (songCount === 0) {
+                resultsDiv.innerHTML += '<div class="error">Could not parse songs. Please try again.</div>';
+            }
+        }
     </script>
-  </body>
+</body>
 </html>
