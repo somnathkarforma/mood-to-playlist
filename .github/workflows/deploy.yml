@@ -20,24 +20,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          
-      - name: Replace API key placeholder
+
+      - name: Inject Groq API key
         run: |
-          echo "Replacing API key placeholder..."
+          if [ -z "${GROQ_API_KEY}" ]; then
+            echo "ERROR: GROQ_API_KEY secret is not set." >&2
+            exit 1
+          fi
           sed -i "s/GROQ_API_KEY_PLACEHOLDER/${GROQ_API_KEY}/g" index.html
-          echo "Replacement done. Checking result:"
-          grep -o "GROQ_API_KEY_PLACEHOLDER" index.html || echo "Placeholder successfully replaced"
+          if grep -q "GROQ_API_KEY_PLACEHOLDER" index.html; then
+            echo "ERROR: Placeholder was not replaced — check sed command." >&2
+            exit 1
+          fi
+          echo "✅ API key injected successfully."
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
-        
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
