@@ -5,19 +5,23 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>AI Mood Music</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.83.0/build/style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.71.0/build/style.css" />
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/browser@0.83.0/build/stlite.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/browser@0.71.0/build/stlite.js"></script>
     <script>
       stlite.mount({
         requirements: ["google-generativeai"], // Install the AI library in the browser
         entrypoint: "app.py",
         files: {
-          "app.py": `
+          "app.py": \`
 import streamlit as st
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    st.error("AI library not loaded")
+    st.stop()
 
 # Setup AI
 genai.configure(api_key="AIzaSyCRtR2bEzI0FMk7uDhGKjPvxmxpk5nukmg")
@@ -39,7 +43,7 @@ if st.button("Get 5 Songs"):
             st.markdown(response.text)
     else:
         st.error("Please enter a mood!")
-`,
+\`,
         },
       }, document.getElementById("root"));
     </script>
