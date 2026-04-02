@@ -225,8 +225,10 @@
                             role: 'user',
                             content: prompt
                         }],
-                        max_tokens: 500,
-                        temperature: 0.7
+                        max_output_tokens: 500,
+                        temperature: 0.7,
+                        top_p: 0.95,
+                        stream: false
                     })
                 });
 
@@ -234,11 +236,24 @@
                 console.log('Response headers:', response.headers);
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    const errBody = await response.text();
+                    console.error('API error body:', errBody);
+                    throw new Error(`API Error: ${response.status} - ${errBody}`);
                 }
 
                 const data = await response.json();
-                const content = data.choices[0].message.content;
+                console.log('GROQ response payload:', data);
+
+                let content = '';
+                if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+                    content = data.choices[0].message.content;
+                } else if (data.output && data.output.length > 0) {
+                    content = data.output[0].content[0]?.text || '';
+                }
+
+                if (!content) {
+                    throw new Error('No response text returned by the API');
+                }
 
                 displaySongs(content);
             } catch (error) {
