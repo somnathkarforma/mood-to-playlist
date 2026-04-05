@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject Groq API key
+        run: |
+          if [ -z "${GROQ_API_KEY}" ]; then
+            echo "ERROR: GROQ_API_KEY secret is not set." >&2
+            exit 1
+          fi
+          sed -i "s/GROQ_API_KEY_PLACEHOLDER/${GROQ_API_KEY}/g" index.html
+          if grep -q "GROQ_API_KEY_PLACEHOLDER" index.html; then
+            echo "ERROR: Placeholder was not replaced — check sed command." >&2
+            exit 1
+          fi
+          echo "✅ API key injected successfully."
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
